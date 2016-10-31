@@ -25,15 +25,19 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
+import com.google.appengine.repackaged.com.google.common.collect.Iterables;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
+import java.util.Iterator;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.googlecode.objectify.ObjectifyService;
+
 
 /**
  * Form Handling Servlet
@@ -62,8 +66,24 @@ public class SignGuestbookServlet extends HttpServlet {
 
     // Use Objectify to save the greeting and now() is used to make the call synchronously as we
     // will immediately get a new page using redirect and we want the data to be present.
+    
+    /* To delete entities saved in Objectify
+    Iterable<com.googlecode.objectify.Key<Greeting>> allKeys = ObjectifyService.ofy().load().type(Greeting.class).keys();
+    ObjectifyService.ofy().delete().keys(allKeys); */
+    
     ObjectifyService.ofy().save().entity(greeting).now();
 
+    
+    Iterable<com.googlecode.objectify.Key<Greeting>> allKeys = ObjectifyService.ofy()
+    																.load()
+    																.type(Greeting.class)
+    																.order("-date")
+    																.keys();
+    /* No more than 5 Greetings stored, delete old ones */ 
+    while(Iterables.size(allKeys) > 5) {
+    	ObjectifyService.ofy().delete().keys(Iterables.get(allKeys, 5)).now();	
+    }
+   
     resp.sendRedirect("/guestbook.jsp?guestbookName=" + guestbookName);
   }
 }
